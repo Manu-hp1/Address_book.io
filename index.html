@@ -1,92 +1,603 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <title>AddressBook – A C Based Contact Manager</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AddressBook — C Based Contact Manager — Manu H P</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── DARK THEME — Dark + Sky Blue + White ── */
+    :root {
+      --bg:         #070D14;
+      --panel:      #0A1220;
+      --card:       #0D1829;
+      --border:     #132540;
+      --blue:       #38BDF8;   /* sky blue */
+      --blue2:      #7DD3FC;   /* lighter sky blue */
+      --blue3:      #0EA5E9;   /* medium sky blue */
+      --white:      #F0F9FF;
+      --cream:      #BAE6FD;
+      --muted:      #4A7FA0;
+      --dark:       #030810;
+      --navy:       #081018;
+      --hover-card: #112035;
+      --nav-bg:     rgba(7,13,20,.92);
+      --grad:       linear-gradient(135deg, #38BDF8, #7DD3FC);
+    }
+    /* ── LIGHT THEME ── */
+    [data-theme="light"] {
+      --bg:         #F0F9FF;
+      --panel:      #E0F2FE;
+      --card:       #FFFFFF;
+      --border:     #BAE6FD;
+      --blue:       #0284C7;
+      --blue2:      #0369A1;
+      --blue3:      #0EA5E9;
+      --white:      #0C1A26;
+      --cream:      #0E2740;
+      --muted:      #3A7DA8;
+      --dark:       #F0F9FF;
+      --navy:       #E0F2FE;
+      --hover-card: #DBEAFE;
+      --nav-bg:     rgba(240,249,255,.92);
+      --grad:       linear-gradient(135deg, #0284C7, #0369A1);
+    }
+    html{transition:background .3s,color .3s;scroll-behavior:smooth;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+
+    /* ── MOVEMENT ANIMATIONS ── */
+
+    /* 1. Floating background orbs */
+    .orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(80px);}
+    .orb-1{width:500px;height:500px;background:rgba(56,189,248,.06);top:-100px;right:-100px;animation:floatOrb1 12s ease-in-out infinite;}
+    .orb-2{width:380px;height:380px;background:rgba(14,165,233,.05);bottom:10%;left:-80px;animation:floatOrb2 16s ease-in-out infinite;}
+    .orb-3{width:280px;height:280px;background:rgba(125,211,252,.04);top:45%;right:10%;animation:floatOrb3 10s ease-in-out infinite;}
+    @keyframes floatOrb1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-40px,30px) scale(1.05)}66%{transform:translate(20px,-25px) scale(.97)}}
+    @keyframes floatOrb2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(35px,-40px) scale(1.08)}70%{transform:translate(-20px,20px) scale(.95)}}
+    @keyframes floatOrb3{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,25px)}}
+
+    /* 2. Animated grid — slow drift */
+    body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(56,189,248,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.03) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0;animation:gridDrift 25s linear infinite;}
+    @keyframes gridDrift{0%{background-position:0 0}100%{background-position:52px 52px}}
+
+    /* 3. Pulse ring on hero tag dot */
+    .hero-tag span{width:6px;height:6px;background:var(--blue2);border-radius:50%;animation:blink 2s infinite;position:relative;}
+    .hero-tag span::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1.5px solid var(--blue2);animation:pulseRing 2s ease-out infinite;opacity:0;}
+    @keyframes pulseRing{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.5);opacity:0}}
+
+    /* 4. Stat numbers count up */
+    .stat-num{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;font-weight:700;display:block;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;transition:transform .3s;}
+    .stat-item:hover .stat-num{transform:scale(1.12);}
+
+    /* 5. Contact cards float gently */
+    .contact-card:nth-child(1){animation:cardFloat 6s ease-in-out infinite;}
+    .contact-card:nth-child(2){animation:cardFloat 6s ease-in-out infinite;animation-delay:1.5s;}
+    .contact-card:nth-child(3){animation:cardFloat 6s ease-in-out infinite;animation-delay:3s;}
+    .contact-card:nth-child(4){animation:cardFloat 6s ease-in-out infinite;animation-delay:4.5s;}
+    @keyframes cardFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+    /* 6. Avatar gradient spin */
+    .contact-avatar{width:32px;height:32px;background:var(--grad);background-size:200% 200%;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:.7rem;font-weight:700;color:var(--dark);flex-shrink:0;animation:gradShift 4s ease infinite;}
+    @keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+    /* 7. How card number shimmer */
+    .how-num{font-family:'IBM Plex Mono',monospace;font-size:2.8rem;font-weight:700;color:rgba(56,189,248,.07);line-height:1;margin-bottom:.8rem;transition:color .4s;}
+    .how-card:hover .how-num{color:rgba(56,189,248,.18);}
+
+    /* 8. Section label typing cursor */
+    .section-label::after{content:'|';margin-left:2px;animation:cursor .8s step-end infinite;}
+    @keyframes cursor{0%,100%{opacity:1}50%{opacity:0}}
+
+    /* 9. Tech card badge shimmer */
+    .tech-badge{font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--dark);background:var(--grad);background-size:200% 200%;padding:.18rem .55rem;display:inline-block;margin-bottom:.7rem;font-weight:700;letter-spacing:.04em;animation:gradShift 3s ease infinite;}
+
+    /* 10. Flowing border on about avatar */
+    .about-avatar{width:90px;height:90px;background:rgba(56,189,248,.06);border:2px solid rgba(56,189,248,.25);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:.58rem;font-weight:700;color:var(--blue2);margin-bottom:1.2rem;text-align:center;line-height:1.5;letter-spacing:.06em;animation:borderPulse 3s ease-in-out infinite;}
+    @keyframes borderPulse{0%,100%{border-color:rgba(56,189,248,.25);box-shadow:none}50%{border-color:rgba(56,189,248,.6);box-shadow:0 0 18px rgba(56,189,248,.15)}}
+
+    /* 11. Skill tags wave on hover */
+    .about-skills:hover .skill-tag{animation:tagWave .4s ease forwards;}
+    .about-skills .skill-tag:nth-child(1){animation-delay:0s}
+    .about-skills .skill-tag:nth-child(2){animation-delay:.05s}
+    .about-skills .skill-tag:nth-child(3){animation-delay:.1s}
+    .about-skills .skill-tag:nth-child(4){animation-delay:.15s}
+    .about-skills .skill-tag:nth-child(5){animation-delay:.2s}
+    .about-skills .skill-tag:nth-child(6){animation-delay:.25s}
+    @keyframes tagWave{0%{transform:translateY(0)}50%{transform:translateY(-5px)}100%{transform:translateY(0)}}
+
+    /* 12. Feature icon bounce on card hover */
+    .feature-card:hover .feature-icon-wrap{animation:iconBounce .5s ease;}
+    @keyframes iconBounce{0%,100%{transform:scale(1)}40%{transform:scale(1.2)}70%{transform:scale(.92)}}
+
+    /* 13. Nav logo text shimmer */
+    .nav-logo{font-family:'IBM Plex Mono',monospace;font-size:.8rem;background:var(--grad);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.08em;font-weight:600;animation:gradShift 4s ease infinite;}
+
+    /* 14. Footer span shimmer */
+    .footer-left span{background:var(--grad);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradShift 4s ease infinite;}
+
+    /* 15. Scroll progress bar */
+    .scroll-bar{position:fixed;top:0;left:0;height:2px;background:var(--grad);z-index:9999;width:0%;transition:width .1s;}
+
+    /* ── NAV ── */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 4rem;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+    .nav-logo{font-family:'IBM Plex Mono',monospace;font-size:.8rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.08em;font-weight:600;}
+    .nav-links{display:flex;gap:2.5rem;}
+    .nav-links a{font-size:.82rem;color:var(--muted);text-decoration:none;letter-spacing:.02em;transition:color .2s;font-family:'DM Sans',sans-serif;}
+    .nav-links a:hover{color:var(--white);}
+    .nav-right{display:flex;align-items:center;gap:1rem;}
+    .nav-btn{font-family:'IBM Plex Mono',monospace;font-size:.74rem;padding:.45rem 1.2rem;border:1px solid var(--blue);color:var(--blue);background:transparent;text-decoration:none;letter-spacing:.04em;transition:all .2s;}
+    .nav-btn:hover{background:var(--blue);color:var(--dark);}
+
+    /* Theme toggle */
+    .theme-toggle-wrap{display:flex;align-items:center;gap:.5rem;cursor:pointer;}
+    .theme-icon{font-size:.9rem;user-select:none;}
+    .theme-toggle{width:42px;height:22px;background:var(--border);border-radius:999px;position:relative;border:1.5px solid var(--blue);transition:background .3s;flex-shrink:0;}
+    .theme-toggle::after{content:'';position:absolute;width:14px;height:14px;background:var(--blue);border-radius:50%;top:2px;left:2px;transition:transform .3s ease;}
+    [data-theme="light"] .theme-toggle::after{transform:translateX(20px);}
+    #themeIconSun{opacity:.3;}
+    [data-theme="light"] #themeIconMoon{opacity:.3;}
+    [data-theme="light"] #themeIconSun{opacity:1;}
+
+    /* ── HERO ── */
+    .hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:7rem 4rem 4rem;gap:4rem;position:relative;z-index:1;}
+    .hero-tag{display:inline-flex;align-items:center;gap:.5rem;font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--blue2);letter-spacing:.15em;border:1px solid rgba(56,189,248,.2);padding:.3rem .85rem;margin-bottom:1.8rem;background:rgba(56,189,248,.04);}
+    .hero-tag span{width:6px;height:6px;background:var(--blue2);border-radius:50%;animation:blink 2s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .hero h1{font-family:'Playfair Display',serif;font-size:clamp(2.4rem,4.2vw,3.8rem);font-weight:900;line-height:1.1;letter-spacing:-.01em;margin-bottom:1rem;}
+    .hero h1 em{font-style:italic;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hero-sub{font-size:1.05rem;color:var(--cream);line-height:1.8;margin-bottom:1.8rem;max-width:480px;font-weight:300;letter-spacing:.01em;}
+    .hero-desc{font-size:.9rem;color:var(--muted);line-height:1.85;margin-bottom:2.5rem;max-width:480px;border-left:2px solid var(--border);padding-left:1rem;font-weight:300;}
+    .hero-btns{display:flex;gap:1rem;flex-wrap:wrap;}
+    .btn-primary{font-family:'IBM Plex Mono',monospace;font-size:.76rem;padding:.82rem 2rem;background:var(--grad);color:var(--dark);text-decoration:none;font-weight:700;letter-spacing:.04em;transition:all .2s;display:inline-flex;align-items:center;gap:.5rem;border:none;}
+    .btn-primary:hover{opacity:.88;transform:translateY(-2px);box-shadow:0 8px 24px rgba(56,189,248,.25);}
+    .btn-secondary{font-family:'IBM Plex Mono',monospace;font-size:.76rem;padding:.82rem 2rem;border:1px solid var(--border);color:var(--cream);text-decoration:none;letter-spacing:.04em;transition:all .2s;display:inline-flex;align-items:center;gap:.5rem;}
+    .btn-secondary:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-2px);}
+    .hero-stats{display:flex;gap:2.5rem;margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--border);}
+    .stat-num{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;font-weight:700;display:block;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .stat-label{font-size:.72rem;color:var(--muted);letter-spacing:.05em;margin-top:.2rem;font-family:'IBM Plex Mono',monospace;}
+
+    /* Hero right — contact card UI mockup */
+    .hero-right{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;}
+    .contacts-wrap{position:relative;width:400px;}
+    .canvas-label{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--blue2);letter-spacing:.1em;background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.15);padding:.18rem .5rem;z-index:2;}
+    .canvas-label.top{top:-1rem;left:1.2rem;}
+    .canvas-label.bottom{bottom:-1rem;right:1.2rem;}
+    .contacts-ui{background:var(--card);border:1px solid var(--border);box-shadow:0 0 60px rgba(56,189,248,.08);overflow:hidden;}
+    .ui-bar{background:var(--panel);padding:.6rem 1rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--border);}
+    .u-dot{width:10px;height:10px;border-radius:50%;}
+    .u-dot.r{background:#FF5F57;}.u-dot.y{background:#FEBC2E;}.u-dot.g{background:#28C840;}
+    .ui-title{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted);margin-left:.5rem;letter-spacing:.05em;}
+    .ui-menu{background:var(--panel);border-bottom:1px solid var(--border);padding:.6rem 1rem;}
+    .ui-menu-title{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--blue2);letter-spacing:.1em;margin-bottom:.4rem;}
+    .menu-items{display:flex;flex-wrap:wrap;gap:.4rem;}
+    .menu-item{font-family:'IBM Plex Mono',monospace;font-size:.65rem;padding:.2rem .55rem;border:1px solid var(--border);color:var(--muted);}
+    .menu-item.active{border-color:var(--blue);color:var(--blue);background:rgba(56,189,248,.06);}
+    .contacts-list{padding:.8rem;}
+    .contact-card{display:flex;align-items:center;gap:.9rem;padding:.7rem .8rem;border:1px solid var(--border);background:var(--panel);margin-bottom:.5rem;transition:all .3s;}
+    .contact-card:hover{border-color:var(--blue);background:var(--hover-card);}
+    .contact-card:last-child{margin-bottom:0;}
+    .contact-avatar{width:32px;height:32px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:.7rem;font-weight:700;color:var(--dark);flex-shrink:0;}
+    .contact-name{font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--white);font-weight:500;}
+    .contact-phone{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--muted);margin-top:.1rem;}
+    .contact-tag{font-family:'IBM Plex Mono',monospace;font-size:.6rem;padding:.1rem .4rem;border:1px solid rgba(56,189,248,.2);color:var(--blue2);margin-left:auto;flex-shrink:0;}
+
+    /* ── SECTIONS ── */
+    section{padding:5rem 4rem;position:relative;z-index:1;}
+    .section-label{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--blue2);letter-spacing:.2em;margin-bottom:.7rem;}
+    .section-title{font-family:'Playfair Display',serif;font-size:clamp(1.7rem,3vw,2.4rem);font-weight:800;line-height:1.15;margin-bottom:.9rem;letter-spacing:-.01em;}
+    .section-desc{font-size:.93rem;color:var(--muted);line-height:1.8;max-width:560px;font-weight:300;}
+
+    /* ── HOW IT WORKS ── */
+    .how-section{background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+    .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:3rem;background:var(--border);}
+    .how-card{background:var(--card);padding:2.2rem;position:relative;overflow:hidden;transition:all .3s;}
+    .how-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);transform:translateX(-100%);transition:transform .5s ease;}
+    .how-card:hover::before{transform:translateX(0);}
+    .how-card:hover{background:var(--hover-card);}
+    .how-num{font-family:'IBM Plex Mono',monospace;font-size:2.8rem;font-weight:700;color:rgba(56,189,248,.06);line-height:1;margin-bottom:.8rem;}
+    .how-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--white);margin-bottom:.5rem;letter-spacing:-.01em;}
+    .how-desc{font-size:.83rem;color:var(--muted);line-height:1.7;font-weight:300;}
+    .how-code{margin-top:1rem;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--blue2);background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.12);padding:.45rem .75rem;display:inline-block;}
+
+    /* ── OPERATIONS FLOW ── */
+    .flow-section{border-top:1px solid var(--border);}
+    .flow-container{display:grid;grid-template-columns:1fr auto 1fr;gap:2rem;align-items:start;margin-top:3rem;}
+    .flow-box{border:1px solid var(--border);background:var(--card);overflow:hidden;}
+    .flow-header{padding:.75rem 1.5rem;font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.1em;font-weight:700;display:flex;align-items:center;gap:.6rem;}
+    .flow-header.read{background:rgba(56,189,248,.08);color:var(--blue2);border-bottom:1px solid rgba(56,189,248,.15);}
+    .flow-header.write{background:rgba(14,165,233,.08);color:var(--blue);border-bottom:1px solid rgba(14,165,233,.15);}
+    .flow-header span{width:7px;height:7px;border-radius:50%;}
+    .flow-header.read span{background:var(--blue2);}
+    .flow-header.write span{background:var(--blue);}
+    .flow-steps{padding:1.5rem;}
+    .flow-step{display:flex;align-items:flex-start;gap:.9rem;padding:.85rem 0;border-bottom:1px solid var(--border);}
+    .flow-step:last-child{border-bottom:none;}
+    .step-num{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--dark);background:var(--blue2);width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;}
+    .step-num.b2{background:var(--blue);color:var(--dark);}
+    .step-text{font-size:.82rem;color:var(--cream);line-height:1.5;font-weight:300;}
+    .step-code{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--blue2);margin-top:.25rem;}
+    .step-code.b2{color:var(--blue);}
+    .flow-arrow{display:flex;align-items:center;justify-content:center;padding-top:5rem;flex-direction:column;gap:.4rem;}
+    .flow-arrow-line{width:2px;height:55px;background:var(--grad);}
+    .flow-arrow-label{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.1em;writing-mode:vertical-rl;}
+
+    /* ── FEATURES ── */
+    .features-section{background:var(--panel);border-top:1px solid var(--border);}
+    .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin-top:3rem;background:var(--border);}
+    .feature-card{background:var(--card);padding:1.8rem 2.2rem;display:flex;gap:1.3rem;align-items:flex-start;transition:all .3s;}
+    .feature-card:hover{background:var(--hover-card);}
+    .feature-icon-wrap{width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.12);flex-shrink:0;font-size:1.1rem;}
+    .feature-title{font-family:'Playfair Display',serif;font-size:.98rem;font-weight:700;color:var(--white);margin-bottom:.35rem;letter-spacing:-.01em;}
+    .feature-desc{font-size:.82rem;color:var(--muted);line-height:1.7;font-weight:300;}
+
+    /* ── TECH STACK ── */
+    .tech-section{border-top:1px solid var(--border);}
+    .tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:3rem;}
+    .tech-card{border:1px solid var(--border);padding:1.6rem;background:var(--card);transition:all .3s;}
+    .tech-card:hover{border-color:var(--blue);transform:translateY(-3px);box-shadow:0 10px 28px rgba(56,189,248,.1);}
+    .tech-badge{font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--dark);background:var(--grad);padding:.18rem .55rem;display:inline-block;margin-bottom:.7rem;font-weight:700;letter-spacing:.04em;}
+    .tech-name{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--white);margin-bottom:.35rem;letter-spacing:-.01em;}
+    .tech-detail{font-size:.8rem;color:var(--muted);line-height:1.65;font-weight:300;}
+
+    /* ── ABOUT ── */
+    .about-section{background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+    .about-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;}
+    .about-avatar{width:90px;height:90px;background:rgba(56,189,248,.06);border:2px solid rgba(56,189,248,.25);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:.58rem;font-weight:700;color:var(--blue2);margin-bottom:1.2rem;text-align:center;line-height:1.5;letter-spacing:.06em;}
+    .about-name{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;margin-bottom:.25rem;letter-spacing:-.01em;}
+    .about-role{font-size:.8rem;color:var(--blue2);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;margin-bottom:.9rem;}
+    .about-bio{font-size:.9rem;color:var(--muted);line-height:1.85;margin-bottom:1.4rem;font-weight:300;}
+    .about-skills{display:flex;flex-wrap:wrap;gap:.45rem;}
+    .skill-tag{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--blue2);border:1px solid rgba(56,189,248,.2);padding:.22rem .65rem;background:rgba(56,189,248,.04);letter-spacing:.04em;}
+    .about-card{border:1px solid var(--border);background:var(--card);padding:1.6rem;margin-bottom:.9rem;}
+    .about-card-title{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.5rem;}
+    .about-card-val{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:600;color:var(--white);}
+    .about-card-val span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .mentor-item{display:flex;align-items:center;gap:.75rem;padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.83rem;color:var(--cream);font-family:'DM Sans',sans-serif;}
+    .mentor-item:last-child{border-bottom:none;}
+    .mentor-dot{width:5px;height:5px;background:var(--blue);border-radius:50%;flex-shrink:0;}
+
+    /* ── FOOTER ── */
+    footer{padding:2.2rem 4rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .footer-left{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);}
+    .footer-left span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .footer-right{display:flex;gap:1.5rem;}
+    .footer-right a{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted);text-decoration:none;letter-spacing:.04em;transition:color .2s;}
+    .footer-right a:hover{color:var(--blue2);}
+
+    /* Animations */
+    .fade-up{opacity:0;transform:translateY(20px);animation:fadeUp .65s ease forwards;}
+    @keyframes fadeUp{to{opacity:1;transform:translateY(0);}}
+    .fade-up:nth-child(1){animation-delay:.1s}.fade-up:nth-child(2){animation-delay:.2s}.fade-up:nth-child(3){animation-delay:.3s}.fade-up:nth-child(4){animation-delay:.4s}.fade-up:nth-child(5){animation-delay:.5s}
+    ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
+    @media(max-width:900px){
+      nav{padding:1rem 1.5rem;}.nav-links{display:none;}
+      .hero{grid-template-columns:1fr;padding:6rem 1.5rem 3rem;}.hero-right{display:none;}
+      section{padding:3rem 1.5rem;}
+      .how-grid,.features-grid,.tech-grid{grid-template-columns:1fr;}
+      .flow-container{grid-template-columns:1fr;}.flow-arrow{display:none;}
+      .about-inner{grid-template-columns:1fr;}
+      footer{flex-direction:column;gap:1rem;text-align:center;padding:2rem 1.5rem;}
+    }
+  </style>
 </head>
 <body>
 
-<header class="navbar">
-    <div class="nav-container">
-        <div class="logo">AddressBook</div>
+<!-- Scroll progress bar -->
+<div class="scroll-bar" id="scrollBar"></div>
 
-        <div class="menu-toggle" id="menuToggle">&#9776;</div>
+<!-- Floating background orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
 
-        <div class="nav-buttons" id="navButtons">
-            <a href="https://github.com/Manu-hp1" class="btn">View on GitHub</a>
-            <a href="https://github.com/Manu-hp1/Address_Book" class="btn">View source code</a>
-        </div>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">ADDRESS BOOK</div>
+  <div class="nav-links">
+    <a href="#how">How It Works</a>
+    <a href="#flow">Operations</a>
+    <a href="#features">Features</a>
+    <a href="#tech">Tech</a>
+    <a href="#about">About</a>
+  </div>
+  <div class="nav-right">
+    <div class="theme-toggle-wrap" onclick="toggleTheme()" title="Toggle Light / Dark">
+      <span class="theme-icon" id="themeIconMoon">🌙</span>
+      <div class="theme-toggle"></div>
+      <span class="theme-icon" id="themeIconSun">☀️</span>
     </div>
-</header>
+    <a href="https://github.com/Manu-hp1/Address_Book" target="_blank" class="nav-btn">View Source</a>
+  </div>
+</nav>
 
+<!-- HERO -->
 <section class="hero">
-    <h1>AddressBook</h1>
-    <p>
-        A lightweight, file-based contact management application written in C,
-        designed with reliability, simplicity, and clarity in mind.
-    </p>
-    <div class="hero-buttons">
-        <a href="https://github.com/Manu-hp1/Address_Book" class="primary-btn">Source Code</a>
-        <a href="https://www.canva.com/design/DAG5AhB1vV8/0YJ8UOdtHsonvl8E-jb7OA/view?utm_content=DAG5AhB1vV8&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h8f65fcc494" class="secondary-btn">Watch Demo</a>
+  <div class="hero-left">
+    <div class="hero-tag fade-up"><span></span>C PROGRAMMING · FILE HANDLING</div>
+    <h1 class="fade-up">Manage Every<br/><em>Contact.</em><br/>In Pure C.</h1>
+    <p class="hero-sub fade-up">A lightweight, file-based contact management application written in C — designed with reliability, simplicity and modular software principles.</p>
+    <p class="hero-desc fade-up">No database. No framework. Just C structures, file I/O and your own logic. This project taught me how real applications manage persistent data at the lowest level — the same principles that power every embedded data storage system.</p>
+    <div class="hero-btns fade-up">
+      <a href="https://github.com/Manu-hp1/Address_Book" target="_blank" class="btn-primary">↗ Source Code</a>
+      <a href="https://www.canva.com/design/DAG5AhB1vV8/0YJ8UOdtHsonvl8E-jb7OA/view" target="_blank" class="btn-secondary">▶ Watch Demo</a>
     </div>
-</section>
-
-<section class="section">
-    <h2>Why AddressBook?</h2>
-    <div class="features">
-        <div class="card">
-            <h3>Persistent Storage</h3>
-            <p>Contacts are stored using file handling, ensuring data is retained across executions.</p>
-        </div>
-        <div class="card">
-            <h3>Menu Driven Design</h3>
-            <p>Simple terminal-based interface with clear options for user interaction.</p>
-        </div>
-        <div class="card">
-            <h3>Robust Validation</h3>
-            <p>Prevents invalid inputs and ensures reliable contact operations.</p>
-        </div>
+    <div class="hero-stats fade-up">
+      <div><span class="stat-num">5</span><div class="stat-label">OPERATIONS</div></div>
+      <div><span class="stat-num">FILE</span><div class="stat-label">PERSISTENCE</div></div>
+      <div><span class="stat-num">0</span><div class="stat-label">LIBRARIES</div></div>
+      <div><span class="stat-num">C</span><div class="stat-label">LANGUAGE</div></div>
     </div>
-</section>
+  </div>
 
-<section class="section light">
-    <h2>Key Features</h2>
-    <ul class="list">
-        <li>Add, view, search, edit, and delete contacts</li>
-        <li>Structured data management using C structures</li>
-        <li>Modular source code for maintainability</li>
-        <li>Efficient file I/O operations</li>
-        <li>Designed for Linux environments</li>
-    </ul>
-</section>
-
-<section class="section">
-    <h2>Technology Stack</h2>
-    <div class="tech">
-        <span>Linux</span>
-        <span>C Programming</span>
-        <span>Strings</span>
-        <span>Pointers</span>
-        <span>Structures</span>
-        <span>File Handling</span>
+  <!-- Hero right — Contact UI mockup -->
+  <div class="hero-right">
+    <div class="contacts-wrap">
+      <div class="canvas-label top">ADDRESSBOOK — CONTACTS</div>
+      <div class="contacts-ui">
+        <div class="ui-bar">
+          <div class="u-dot r"></div><div class="u-dot y"></div><div class="u-dot g"></div>
+          <span class="ui-title">addressbook — manu@linux</span>
+        </div>
+        <div class="ui-menu">
+          <div class="ui-menu-title">MENU</div>
+          <div class="menu-items">
+            <span class="menu-item active">1. Add</span>
+            <span class="menu-item">2. View</span>
+            <span class="menu-item">3. Search</span>
+            <span class="menu-item">4. Edit</span>
+            <span class="menu-item">5. Delete</span>
+            <span class="menu-item">6. Exit</span>
+          </div>
+        </div>
+        <div class="contacts-list" id="contactsList">
+          <div class="contact-card">
+            <div class="contact-avatar">ACM</div>
+            <div>
+              <div class="contact-name">Amar C M</div>
+              <div class="contact-phone">+91 98765 43210</div>
+            </div>
+            <span class="contact-tag">SAVED</span>
+          </div>
+          <div class="contact-card">
+            <div class="contact-avatar">AS</div>
+            <div>
+              <div class="contact-name">Anand Sir</div>
+              <div class="contact-phone">+91 87654 32109</div>
+            </div>
+            <span class="contact-tag">SAVED</span>
+          </div>
+          <div class="contact-card">
+            <div class="contact-avatar">BP</div>
+            <div>
+              <div class="contact-name">Balgopal P</div>
+              <div class="contact-phone">+91 76543 21098</div>
+            </div>
+            <span class="contact-tag">SAVED</span>
+          </div>
+          <div class="contact-card">
+            <div class="contact-avatar">SP</div>
+            <div>
+              <div class="contact-name">Srivatsa P</div>
+              <div class="contact-phone">+91 65432 10987</div>
+            </div>
+            <span class="contact-tag">SAVED</span>
+          </div>
+        </div>
+      </div>
+      <div class="canvas-label bottom">fopen · fread · fwrite · fclose</div>
     </div>
+  </div>
 </section>
 
-<section class="section light">
-    <h2>About the Developer</h2>
-    <p class="about">
-        Hi, I’m <strong>Manu H P</strong>, an Embedded Systems trainee at Emertxe Information Technologies.
-        I built AddressBook to strengthen my fundamentals in C programming, file handling,
-        and modular software design while following industry-style coding practices.
-    </p>
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="section-label">// HOW IT WORKS</div>
+  <h2 class="section-title">File-Based Persistence</h2>
+  <p class="section-desc">Every contact is stored as a C structure written directly to a binary file. No database. The entire persistence layer is built using fopen, fread, fwrite and fclose — giving full control over how data is read, modified and saved.</p>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-num">01</div>
+      <div class="how-title">Store as a C Structure</div>
+      <div class="how-desc">Each contact is a struct with name, phone and email fields. The struct is written directly to a binary file using fwrite. Reading is done with fread — no parsing needed.</div>
+      <div class="how-code">fwrite(&contact, sizeof(Contact), 1, fp)</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">02</div>
+      <div class="how-title">Edit Using File Reconstruction</div>
+      <div class="how-desc">To edit or delete a record, every contact is read into memory, the target is modified or skipped, and all records are written to a temporary file which replaces the original.</div>
+      <div class="how-code">fseek(fp, offset, SEEK_SET)</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">03</div>
+      <div class="how-title">Search & Validate</div>
+      <div class="how-desc">Search reads through every record sequentially comparing names or phone numbers using strcmp(). Input validation prevents empty fields, duplicate entries and invalid phone numbers from being saved.</div>
+      <div class="how-code">strcmp(contact.name, query)</div>
+    </div>
+  </div>
 </section>
 
-<footer class="footer">
-    <p>© 2025 Manu H P · AddressBook Project</p>
+<!-- READ / WRITE FLOW -->
+<section class="flow-section" id="flow">
+  <div class="section-label">// OPERATIONS FLOW</div>
+  <h2 class="section-title">Read & Write Operations</h2>
+  <p class="section-desc">Two core file operations power the entire application. Reading loads contacts for display and search. Writing handles add, edit and delete by rebuilding the file safely.</p>
+  <div class="flow-container">
+    <!-- READ -->
+    <div class="flow-box">
+      <div class="flow-header read"><span></span>READ — DISPLAY & SEARCH</div>
+      <div class="flow-steps">
+        <div class="flow-step"><div class="step-num">1</div><div><div class="step-text">Open contacts file in binary read mode</div><div class="step-code">fopen("contacts.dat", "rb")</div></div></div>
+        <div class="flow-step"><div class="step-num">2</div><div><div class="step-text">Read one struct at a time into memory</div><div class="step-code">fread(&c, sizeof(Contact), 1, fp)</div></div></div>
+        <div class="flow-step"><div class="step-num">3</div><div><div class="step-text">Display or compare against search query</div><div class="step-code">strcmp(c.name, query) == 0</div></div></div>
+        <div class="flow-step"><div class="step-num">4</div><div><div class="step-text">Continue until end of file</div><div class="step-code">while (!feof(fp))</div></div></div>
+        <div class="flow-step"><div class="step-num">5</div><div><div class="step-text">Close file after reading</div><div class="step-code">fclose(fp)</div></div></div>
+      </div>
+    </div>
+    <div class="flow-arrow"><div class="flow-arrow-line"></div><div class="flow-arrow-label">FILE I/O</div></div>
+    <!-- WRITE -->
+    <div class="flow-box">
+      <div class="flow-header write"><span></span>WRITE — ADD, EDIT & DELETE</div>
+      <div class="flow-steps">
+        <div class="flow-step"><div class="step-num b2">1</div><div><div class="step-text">Open original file and a temp file</div><div class="step-code b2">fopen("contacts.dat", "rb")</div></div></div>
+        <div class="flow-step"><div class="step-num b2">2</div><div><div class="step-text">Read each contact into memory</div><div class="step-code b2">fread(&c, sizeof(Contact), 1, fp)</div></div></div>
+        <div class="flow-step"><div class="step-num b2">3</div><div><div class="step-text">Skip deleted / write modified record</div><div class="step-code b2">fwrite(&updated, sizeof(Contact), 1, tmp)</div></div></div>
+        <div class="flow-step"><div class="step-num b2">4</div><div><div class="step-text">Replace original with temp file</div><div class="step-code b2">remove("contacts.dat") + rename()</div></div></div>
+        <div class="flow-step"><div class="step-num b2">5</div><div><div class="step-text">Close all file pointers</div><div class="step-code b2">fclose(fp) + fclose(tmp)</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section" id="features">
+  <div class="section-label">// KEY FEATURES</div>
+  <h2 class="section-title">What It Does</h2>
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon-wrap">➕</div><div><div class="feature-title">Add Contacts</div><div class="feature-desc">Stores name, phone number and email as a C struct written directly to a binary file. Input validation prevents empty fields and duplicate phone numbers.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">🔍</div><div><div class="feature-title">Search Contacts</div><div class="feature-desc">Searches through all stored contacts sequentially by name or phone number using strcmp(). Returns matching records with full details displayed.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">✏️</div><div><div class="feature-title">Edit Contacts</div><div class="feature-desc">Modifies existing records using safe temporary file reconstruction. The original file is replaced only after the new file is fully and correctly written.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">🗑️</div><div><div class="feature-title">Delete Contacts</div><div class="feature-desc">Removes a contact by rebuilding the file without the deleted record. No direct line deletion — the entire file is reconstructed safely every time.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">💾</div><div><div class="feature-title">Persistent Storage</div><div class="feature-desc">All contacts are stored in a binary file and persist across program executions. No database needed — pure file I/O using fread and fwrite in C.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">🧱</div><div><div class="feature-title">Modular Architecture</div><div class="feature-desc">Separate functions for add, view, search, edit, delete and validation. Each function has a single responsibility — clean, readable and maintainable code.</div></div></div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="tech-section" id="tech">
+  <div class="section-label">// TECH STACK</div>
+  <h2 class="section-title">Built With</h2>
+  <div class="tech-grid">
+    <div class="tech-card"><div class="tech-badge">LANGUAGE</div><div class="tech-name">C Programming</div><div class="tech-detail">Pure C with no external libraries. Every operation — contact storage, file reconstruction, input validation — built entirely from scratch.</div></div>
+    <div class="tech-card"><div class="tech-badge">STORAGE</div><div class="tech-name">File Handling</div><div class="tech-detail">fopen, fread, fwrite, fclose and fseek for binary file operations. Contacts stored as raw structs — no text parsing, no format overhead.</div></div>
+    <div class="tech-card"><div class="tech-badge">DATA</div><div class="tech-name">C Structures</div><div class="tech-detail">Contact struct holds name, phone and email. Struct written and read directly as binary — efficient, compact and perfectly aligned with the file layout.</div></div>
+    <div class="tech-card"><div class="tech-badge">STRINGS</div><div class="tech-name">String Operations</div><div class="tech-detail">strcmp() for search and duplicate detection. strcpy() for safe field copying. strlen() for input length validation before writing to file.</div></div>
+    <div class="tech-card"><div class="tech-badge">DESIGN</div><div class="tech-name">Modular Programming</div><div class="tech-detail">Each operation in its own function. Input validation separated from business logic. Menu-driven interface cleanly separated from file operations.</div></div>
+    <div class="tech-card"><div class="tech-badge">PLATFORM</div><div class="tech-name">Linux / GCC</div><div class="tech-detail">Compiled with GCC using -Wall -Wextra for zero warnings. Developed and tested on Linux. Compatible with any POSIX-compliant environment.</div></div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about-section" id="about">
+  <div class="about-inner">
+    <div>
+      <div class="about-avatar" style="font-size:.7rem;letter-spacing:.05em;text-align:center;line-height:1.3;">ABOUT<br/>DEV</div>
+      <div class="about-name">Manu H P</div>
+      <div class="about-role">Embedded Systems Trainee — Emertxe</div>
+      <p class="about-bio">AddressBook was my first real C project at Emertxe Information Technology — built during my Advanced C Programming module. It taught me how persistent storage works without a database, how to handle file reconstruction safely, and why defensive programming matters when data integrity is the goal. Every principle here carries directly into embedded systems work.</p>
+      <div class="about-skills">
+        <span class="skill-tag">C Programming</span>
+        <span class="skill-tag">File Handling</span>
+        <span class="skill-tag">Data Structures</span>
+        <span class="skill-tag">Modular Design</span>
+        <span class="skill-tag">Linux</span>
+        <span class="skill-tag">Embedded Systems</span>
+      </div>
+    </div>
+    <div>
+      <div class="about-card"><div class="about-card-title">INSTITUTE</div><div class="about-card-val"><span>Emertxe</span> Information Technology</div></div>
+      <div class="about-card"><div class="about-card-title">MODULE</div><div class="about-card-val">Advanced C Programming — <span>First Project</span></div></div>
+      <div class="about-card">
+        <div class="about-card-title">GUIDED BY</div>
+        <div>
+          <div class="mentor-item"><div class="mentor-dot"></div>Anand Lokhande Sir</div>
+          <div class="mentor-item"><div class="mentor-dot"></div>Jagadeesan S Sir</div>
+          <div class="mentor-item"><div class="mentor-dot"></div>Sapthagiri Shanmugam Sir</div>
+        </div>
+      </div>
+      <div class="about-card">
+        <div class="about-card-title">LINKS</div>
+        <div style="display:flex;gap:.7rem;margin-top:.5rem;">
+          <a href="https://github.com/Manu-hp1/Address_Book" target="_blank" class="btn-primary" style="font-size:.72rem;padding:.45rem 1rem;">GitHub ↗</a>
+          <a href="https://github.com/Manu-hp1" target="_blank" class="btn-secondary" style="font-size:.72rem;padding:.45rem 1rem;">Profile ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">© 2026 <span>Manu H P</span> · AddressBook · Contact Manager in C</div>
+  <div class="footer-right">
+    <a href="https://github.com/Manu-hp1" target="_blank">GitHub</a>
+    <a href="https://github.com/Manu-hp1/Address_Book" target="_blank">Repository</a>
+    <a href="https://manu-hp1.github.io/Address_book.io/" target="_blank">Live Page</a>
+  </div>
 </footer>
 
-<script src="script.js"></script>
+<script>
+  // ── THEME TOGGLE ──
+  function toggleTheme(){
+    const html=document.documentElement;
+    const isLight=html.getAttribute('data-theme')==='light';
+    html.setAttribute('data-theme',isLight?'dark':'light');
+    localStorage.setItem('theme',isLight?'dark':'light');
+  }
+  const savedTheme=localStorage.getItem('theme')||'dark';
+  document.documentElement.setAttribute('data-theme',savedTheme);
+  if(savedTheme==='light'){
+    document.getElementById('themeIconMoon').style.opacity='.3';
+    document.getElementById('themeIconSun').style.opacity='1';
+  }
+
+  // ── SCROLL PROGRESS BAR ──
+  window.addEventListener('scroll',()=>{
+    const scrolled=(window.scrollY/(document.body.scrollHeight-window.innerHeight))*100;
+    document.getElementById('scrollBar').style.width=scrolled+'%';
+  });
+
+  // ── STAT NUMBER COUNT UP ──
+  function countUp(el, target, suffix='', duration=1200){
+    let start=0;
+    const isNum = !isNaN(parseInt(target));
+    if(!isNum){ el.textContent=target; return; }
+    const num=parseInt(target);
+    const step=Math.ceil(num/(duration/16));
+    const timer=setInterval(()=>{
+      start=Math.min(start+step, num);
+      el.textContent=start+suffix;
+      if(start>=num) clearInterval(timer);
+    },16);
+  }
+  const statObs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const nums=e.target.querySelectorAll('.stat-num');
+        nums.forEach(n=>{
+          const val=n.textContent.trim();
+          if(val==='5') countUp(n,5);
+          else if(val==='0') countUp(n,0);
+        });
+        statObs.unobserve(e.target);
+      }
+    });
+  },{threshold:.5});
+  const statsEl=document.querySelector('.hero-stats');
+  if(statsEl) statObs.observe(statsEl);
+
+  // ── CONTACT CARD ANIMATION — cycle active menu item ──
+  const menuItems=document.querySelectorAll('.menu-item');
+  let activeIdx=0;
+  setInterval(()=>{
+    menuItems.forEach(m=>m.classList.remove('active'));
+    activeIdx=(activeIdx+1)%menuItems.length;
+    menuItems[activeIdx].classList.add('active');
+  },2000);
+
+  // ── TYPEWRITER on hero tag ──
+  const tagText = document.querySelector('.hero-tag');
+  if(tagText){
+    tagText.style.opacity='1';
+  }
+
+  // ── SCROLL REVEAL ──
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';}});
+  },{threshold:.08});
+  document.querySelectorAll('.how-card,.feature-card,.tech-card,.about-card,.contact-card').forEach(el=>{
+    el.style.opacity='0';el.style.transform='translateY(18px)';el.style.transition='all .5s ease';obs.observe(el);
+  });
+</script>
 </body>
 </html>
